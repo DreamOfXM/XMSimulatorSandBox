@@ -6,6 +6,10 @@
 //  Copyright © 2017年 guo xiaoming. All rights reserved.
 //
 
+/**
+ * 说实在的这个小插件写了有一段时间了，直到今天才上传，原因是自己并没太多成就感，因为思路并不是自己独有的创造，我看了https://github.com/MakeZL写的东西，然后觉得可能不能满足我的需要，我就重新写了这个插件，在此也感谢MakeZl,虽说并没有完全照抄照搬MakeZl的东西，也加入不少自己的学习和理解，相比MakeZl，我用了不少Mac OS的Api接口，从功能上来说都是查找沙盒路径，但是我增加了新的功能，也可以说是UI展现，这个算是自己的贡献吧，这个思路来源于simPholder,但是simPholder在电脑上不稳定，经常闪退，而且有很多应用运行后找不到，所以，感觉体验有点……，这个也算是一点点改进吧，如果发现有什么bug的话，欢迎指正！！！！
+ */
+
 #import "XMSimulatorSandBox.h"
 #import "XMSimulatorInfo.h"
 #import "AppInfo.h"
