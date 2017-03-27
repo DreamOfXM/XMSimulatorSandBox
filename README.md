@@ -7,3 +7,6 @@ picture 1
 ![image](https://github.com/DreamOfXM/XMSimulatorSandBox/blob/master/pic/1.png)
 
 picture 2![image](https://github.com/DreamOfXM/XMSimulatorSandBox/blob/master/pic/2.gif)
+
+## 功能改进后的展示
+picture 3![image](https://github.com/DreamOfXM/XMSimulatorSandBox/blob/master/pic/3.gif)
