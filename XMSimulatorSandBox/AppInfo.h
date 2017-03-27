@@ -14,6 +14,8 @@
 @property(nonatomic, assign)long long size;
 @property(nonatomic, copy)NSString *appPath;
 @property(nonatomic, copy)NSString *imagePath;
+@property(nonatomic, strong)NSDate *modifyDate;
+
 
 
 @end

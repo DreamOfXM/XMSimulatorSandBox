@@ -96,6 +96,9 @@
 - (void)p_addAppNameText {
     _appNameText = [CATextLayer layer];
     _appNameText.frame = NSMakeRect(CGRectGetMaxX(_imageView.frame)+8, self.bounds.size.height*3/5 + 6, self.frame.size.width - CGRectGetMaxX(_imageView.frame), 15);
+//    if (self.frame.size.height<=30) {
+//        _appNameText.frame = NSMakeRect(0, self.bounds.size.height - 6, self.bounds.size.width, 15);
+//    }
     NSFont *font = [NSFont systemFontOfSize:13];
     CFStringRef fontName = (__bridge CFStringRef)font.fontName;
     CGFontRef fontRef = CGFontCreateWithFontName(fontName);

@@ -7,7 +7,7 @@
 //
 
 /**
- * 说实在的这个小插件写了有一段时间了，直到今天才上传，原因是自己并没太多成就感，因为思路并不是自己独有的创造，我看了https://github.com/MakeZL写的东西，然后觉得可能不能满足我的需要，我就重新写了这个插件，在此也感谢MakeZl,虽说并没有完全照抄照搬MakeZl的东西，也加入不少自己的学习和理解，相比MakeZl，我用了不少Mac OS的Api接口，从功能上来说都是查找沙盒路径，但是我增加了新的功能，也可以说是UI展现，这个算是自己的贡献吧，这个思路来源于simPholder,但是simPholder在电脑上不稳定，经常闪退，而且有很多应用运行后找不到，所以，感觉体验有点……，这个也算是一点点改进吧，如果发现有什么bug的话，欢迎指正！！！！
+ * 说实在的这个小插件写了有一段时间了，直到今天才上传，原因是自己并没太多成就感，因为思路并不是自己独有的创造，我看了https://github.com/MakeZL写的东西，然后觉得可能不能满足我的需要，我就重新写了这个插件，在此也感谢MakeZl，相比MakeZl，我用了不少Mac OS的Api接口，从功能上来说都是查找沙盒路径，但是我增加了新的功能，也可以说是UI展现，这个思路来源于simPholder,但是simPholder在电脑上不稳定，经常闪退，而且有很多应用运行后找不到，所以，感觉体验有点……，这个也算是一点点改进吧，目前存在的问题可能是每次打开菜单时都要移除所有沙盒重新加载，为了是更新数据，但是这很耗损性能，因此这个地方是下一步需要优化的地方，最近没时间搞这个，也欢迎大家批评指点不对的地方！！！！
  */
 
 #import "XMSimulatorSandBox.h"
@@ -116,13 +116,36 @@ static id _instance;
     [fileItem.submenu addItem:[NSMenuItem separatorItem]];
     [fileItem.submenu addItem:sandBoxItem];
 
+    //过滤掉没用的device沙盒
+    [self p_filterSimulatorInfos];
     
+    //获得一天内用过的app沙盒信息
+    NSArray *array =[self p_calculateRecentUsageApp];
+    NSInteger recentUsageCount = array.count;
+//    for (NSInteger index = 0;index < recentUsageCount;index++) {
+//        [self.simulatorInfos insertObject:array[index] atIndex:index];
+//    }
     //3 third menu
     NSMenu *sanBoxMenu = [[NSMenu alloc]init];
     
+    //添加最近使用的沙盒
+    NSMutableArray *recentUsageApps = [[NSMutableArray alloc]init];
+    for (NSInteger index = 0; index<recentUsageCount; index++) {
+        [recentUsageApps addObject:array[index]];
+    }
+    
+    if (recentUsageApps.count) {
+        AppInfo *app = [[AppInfo alloc]init];
+        app.appName = @"Recently used apps(Today)";
+        [recentUsageApps insertObject:app atIndex:0];
+        recentUsageCount = recentUsageCount+1;
+    }
+
+    [self p_addAppInfos:recentUsageApps toNSMenu:sanBoxMenu];
+    
     NSUInteger count = self.simulatorInfos.count;
-    for (NSUInteger index = 0; index < count; index++) {
-        XMSimulatorInfo *simulator = self.simulatorInfos[index];
+    for (NSUInteger index = recentUsageCount; index < count+recentUsageCount; index++) {
+        XMSimulatorInfo *simulator = self.simulatorInfos[index - recentUsageCount];
         // third level Item
         //        NSMenuItem *item = [[NSMenuItem alloc]initWithTitle:simulator.name action:@selector(lala) keyEquivalent:@""];
         NSMenuItem *item = [[NSMenuItem alloc]init];
@@ -137,29 +160,41 @@ static id _instance;
     sandBoxItem.submenu = sanBoxMenu;
 }
 
+//过滤掉没有用到的沙盒
+- (void)p_filterSimulatorInfos {
+    NSInteger count = self.simulatorInfos.count;
+    NSMutableArray *tempArray = [[NSMutableArray alloc]init];
+    [tempArray addObjectsFromArray:self.simulatorInfos];
+    for (NSInteger index = 0;index < count; index++) {
+        XMSimulatorInfo *simpulator = tempArray[index];
+        if (!simpulator.appInfos || !simpulator.appInfos.count) {
+            [self.simulatorInfos removeObject:simpulator];
+        }
+    }
+}
+
+
 
 //添加应用沙盒信息
 - (void)addAppSandBoxInfoOfSimulator:(XMSimulatorInfo *)simulator toItem:(NSMenuItem *)item {
-    [self filterSandBoxsWhichHasNotAppBundleWithSimulatorPath:simulator.simulatorPath appInfos:simulator.appInfos];
-    //3各个应用沙盒
+    //处理 appInfos 里的模型
+//    [self filterSandBoxsWhichHasNotAppBundleWithSimulatorPath:simulator.simulatorPath appInfos:simulator.appInfos];
+    //3 各个应用沙盒
      NSMenu *appMenu = [[NSMenu alloc]init];
-    if (!simulator.appInfos || !simulator.appInfos.count) {
-//fourth level  Item
-        NSMenuItem *appMenuItem = [[NSMenuItem alloc]init];
-        appMenuItem.title = @"no Application sandBox info";
-        [appMenuItem setTarget:self];
-        [appMenu addItem:appMenuItem];
-        item.submenu = appMenu;
-        return;
-    }
-    
-    for (AppInfo *app in simulator.appInfos) {
+    [self p_addAppInfos:simulator.appInfos toNSMenu:appMenu];//非函数式编程了，感觉不太好
+    item.submenu = appMenu;
+}
+
+
+- (void)p_addAppInfos:(NSMutableArray *)appInfos toNSMenu:(NSMenu *)appMenu {
+    if (!appInfos.count) return;
+    for (AppInfo *app in appInfos) {
         XMMenuItem *appMenuItem = [[XMMenuItem alloc]init];
-   
+        
         if (app.appName == nil) {
             continue;
         }
-
+        
         NSData *imageData = [[NSData alloc]initWithContentsOfFile:app.imagePath];
         NSImage *image = nil;
         appMenuItem.image = image;
@@ -177,24 +212,29 @@ static id _instance;
         appMenuItem.appPath = app.appPath;
         [appMenuItem setAction:@selector(goToAppSanBox:)];
         [appMenuItem setTarget:self];
-        
         XMAppSandBoxView *view = [[XMAppSandBoxView alloc]initWithFrame:NSMakeRect(0, 0, 400, 60)];
-        view.delegate = self;
-        view.autoresizingMask = NSViewWidthSizable;
-        view.appImage = image;
-        view.appName = app.appName;
-        view.appIdentifier = app.identifier;
-        view.appPath = app.appPath;
-        view.appSzie = [NSString stringWithFormat:@"size:%@",[self appFileSizeWithSize:app.size]];
+        if ([app.appName isEqualToString:@"Recently used apps(Today)"]) {
+            NSMenuItem *item = [[NSMenuItem alloc]init];
+            item.title = app.appName;
+           [appMenu addItem:item];
+        }else{
+            view.delegate = self;
+            view.autoresizingMask = NSViewWidthSizable;
+            view.appImage = image;
+            view.appName = app.appName;
+            view.appIdentifier = app.identifier;
+            view.appPath = app.appPath;
+            view.appSzie = [NSString stringWithFormat:@"size:%@",[self appFileSizeWithSize:app.size]];
+            appMenuItem.view = view;
+            [appMenu addItem:[NSMenuItem separatorItem]];
+            [appMenu addItem:appMenuItem];
+        }
         
-        appMenuItem.view = view;
-        [appMenu addItem:[NSMenuItem separatorItem]];
-        [appMenu addItem:appMenuItem];
         
-      
+        
     }
-    item.submenu = appMenu;
 }
+
 
 - (void)filterSandBoxsWhichHasNotAppBundleWithSimulatorPath:(NSString *)simulatorPath appInfos:(NSMutableArray *)appInfos {
     NSString *path = [simulatorPath stringByAppendingPathComponent:@"data/Containers/Bundle/Application"];
@@ -232,7 +272,6 @@ static id _instance;
                     NSArray *sources = [array[index] componentsSeparatedByString:@"."];
                     if ([sources containsObject:@"png"]) {
                         if ([array[index] rangeOfString:@"AppIcon"].location  == NSNotFound) continue;
-                        
                         imagePath = [fullPathStr stringByAppendingPathComponent:array[index]];
                         break;
                     }
@@ -258,6 +297,28 @@ static id _instance;
         }
         
     }
+}
+
+- (AppInfo *)p_appInfoFromAppPath:(NSString *)appPath {
+    
+    NSString *appDataInfoPath = [appPath stringByAppendingPathComponent:@".com.apple.mobile_container_manager.metadata.plist"];
+    NSDictionary *appDir = [NSDictionary dictionaryWithContentsOfFile:appDataInfoPath];
+    if (appDir == nil) {
+        return nil;
+    }
+    
+    NSString *documentPath = [appPath stringByAppendingString:@"/Documents"];
+    //    if (![self.fileManager isExecutableFileAtPath:documentPath]) {
+    //
+    //    }
+    NSError *error = nil;
+    NSDictionary *fileAttributes = [self.fileManager attributesOfItemAtPath:documentPath error:&error];
+    
+    AppInfo *app = [[AppInfo alloc]init];
+    app.identifier = appDir[@"MCMMetadataIdentifier"];
+    app.appPath = appPath;
+    app.modifyDate = [fileAttributes objectForKey:NSFileModificationDate];
+    return app;
 }
 
 #pragma mark - HandleEvents
@@ -316,6 +377,7 @@ static id _instance;
         simulator.state = dic[@"state"];
         simulator.simulatorPath = [devicePath stringByAppendingPathComponent:str];
         simulator.appInfos = [self getAppInfosWithDevicePath:devicePath str:str];
+        
         [self.simulatorInfos addObject:simulator];
     }
     
@@ -328,7 +390,9 @@ static id _instance;
 //Get simulator infos
 - (NSMutableArray *)getAppInfosWithDevicePath:(NSString *)devicePath str:(NSString *)str {
     NSMutableArray *appInfos = [[NSMutableArray alloc]init];
-    NSString *appPath = [[devicePath stringByAppendingPathComponent:str] stringByAppendingPathComponent:@"data/Containers/Data/Application"];
+    NSString *simulatorPath = [devicePath stringByAppendingPathComponent:str];
+    NSString *appPath = [simulatorPath stringByAppendingPathComponent:@"data/Containers/Data/Application"];
+    
     if (![self.fileManager fileExistsAtPath:appPath]) {
         return nil;
     }
@@ -346,16 +410,23 @@ static id _instance;
 //        NSArray *temp = [self.fileManager contentsOfDirectoryAtPath:fullAppPath error:&error];
         
 
-        NSString *appDataInfoPath = [fullAppPath stringByAppendingPathComponent:@".com.apple.mobile_container_manager.metadata.plist"];
-        NSDictionary *appDir = [NSDictionary dictionaryWithContentsOfFile:appDataInfoPath];
-        if (appDir == nil) {
+//        NSString *appDataInfoPath = [fullAppPath stringByAppendingPathComponent:@".com.apple.mobile_container_manager.metadata.plist"];
+//        NSDictionary *appDir = [NSDictionary dictionaryWithContentsOfFile:appDataInfoPath];
+//        if (appDir == nil) {
+//            continue;
+//        }
+//        AppInfo *app = [[AppInfo alloc]init];
+//        app.identifier = appDir[@"MCMMetadataIdentifier"];
+//        app.appPath = fullAppPath;
+        AppInfo *app = [self p_appInfoFromAppPath:fullAppPath];
+        if (!app) {
             continue;
         }
-        AppInfo *app = [[AppInfo alloc]init];
-        app.identifier = appDir[@"MCMMetadataIdentifier"];
-        app.appPath = fullAppPath;
+        
         [appInfos addObject:app];
     }
+    
+    [self filterSandBoxsWhichHasNotAppBundleWithSimulatorPath:simulatorPath appInfos:appInfos];
     
     return appInfos;
 }
@@ -410,6 +481,33 @@ static id _instance;
   }
     return [NSString stringWithFormat:@"%d B",(int)fileSize];
 }
+
+- (NSArray *)p_calculateRecentUsageApp {
+    NSMutableArray *tempArray = [[NSMutableArray alloc]init];
+    for (XMSimulatorInfo *simulator in self.simulatorInfos) {
+        [tempArray addObjectsFromArray:simulator.appInfos];
+    }
+    
+    NSArray *sortedArray = [tempArray sortedArrayUsingComparator:^NSComparisonResult(AppInfo  *_Nonnull obj1, AppInfo   * _Nonnull obj2) {
+        if ([obj1.modifyDate timeIntervalSince1970]>[obj2.modifyDate timeIntervalSince1970]) {
+            return NSOrderedDescending;
+        }else if ([obj1.modifyDate timeIntervalSince1970]<[obj2.modifyDate timeIntervalSince1970]) {
+            return NSOrderedAscending;
+        }else {
+            return NSOrderedSame;
+        }
+    }];
+    
+    NSMutableArray *apps = [[NSMutableArray alloc]init];
+    for (AppInfo *appInfo in sortedArray) {
+        if ([[NSDate date] timeIntervalSinceDate:appInfo.modifyDate]< 1*24*60*60) {//一天内
+            [apps addObject:appInfo];
+        }
+    }
+    
+    return apps;
+}
+
 
 #pragma mark - Layzes
 - (NSFileManager *)fileManager {
