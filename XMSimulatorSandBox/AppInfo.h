@@ -15,6 +15,8 @@
 @property(nonatomic, copy)NSString *appPath;
 @property(nonatomic, copy)NSString *imagePath;
 @property(nonatomic, strong)NSDate *modifyDate;
+@property(nonatomic, strong)NSDate *creatDate;
+
 
 
 

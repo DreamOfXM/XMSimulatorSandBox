@@ -57,10 +57,18 @@ static id _instance;
 }
 
 - (void)receiveEveryNSNotifaction:(NSNotification *)sender {
-    //    NSLog(@"objectName ==== %@,info ====== %@",sender.name,sender.userInfo);
+    
+    if (![sender.name isEqualToString:@"NSTextInputContextKeyboardSelectionDidChangeNotification"]) {
+         NSLog(@"objectName ==== %@,info ====== %@",sender.name,sender.userInfo);
+    }
+    
 //    if([sender.name isEqualToString:NSUserDefaultsDidChangeNotification]) {
 //        NSLog(@"objectName ==== %@ ==== %@",sender.name,sender.userInfo);
 
+//    }age
+    
+//    if ([sender.name isEqualToString:@"IDESourceControlIDEDidUpdateLocalStatusNotification"]) {
+//         NSLog(@"objectName ==== %@,info ====== %@",sender.name,sender.userInfo);
 //    }
 }
 
@@ -318,6 +326,7 @@ static id _instance;
     app.identifier = appDir[@"MCMMetadataIdentifier"];
     app.appPath = appPath;
     app.modifyDate = [fileAttributes objectForKey:NSFileModificationDate];
+    app.creatDate = [fileAttributes objectForKey:NSFileCreationDate];
     return app;
 }
 
@@ -500,7 +509,7 @@ static id _instance;
     
     NSMutableArray *apps = [[NSMutableArray alloc]init];
     for (AppInfo *appInfo in sortedArray) {
-        if ([[NSDate date] timeIntervalSinceDate:appInfo.modifyDate]< 1*24*60*60) {//一天内
+        if ([[NSDate date] timeIntervalSinceDate:appInfo.modifyDate]< 1*24*60*60 || [[NSDate date]timeIntervalSinceDate:appInfo.creatDate] < 1*24*60*60) {//一天内
             [apps addObject:appInfo];
         }
     }
