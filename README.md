@@ -10,3 +10,5 @@ picture 2![image](https://github.com/DreamOfXM/XMSimulatorSandBox/blob/master/pi
 
 ## 功能改进后的展示
 picture 3![image](https://github.com/DreamOfXM/XMSimulatorSandBox/blob/master/pic/3.gif)
+
+目前还存在的问题：点击`file`菜单时，稍微有点卡，回头有时间研究一下再优化优化，目前的卡的原因是每次展示菜单时我都要重新去加载所有文件的路径，为了及时刷新我们的文件的数据。可能会有其他方法在某个文件修改时我们只更新单个路径的内容即可，目前没时间研究，回头有时间再看看，这也造成使用时不是那么爽……
